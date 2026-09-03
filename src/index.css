@@ -1,0 +1,18 @@
+/* Tailwind CSS v4 를 통째로 불러옵니다. 이 한 줄이면 유틸리티 클래스를 모두 쓸 수 있습니다. */
+@import "tailwindcss";
+
+:root {
+  color-scheme: light;
+}
+
+/* Apple 느낌의 기본 타이포그래피.
+   사용자의 OS 기본 UI 폰트(맥=San Francisco, 윈도우=Segoe UI, 한글=Apple SD Gothic Neo/맑은 고딕)를
+   그대로 사용해서 어디서 봐도 "시스템 앱" 같은 인상을 줍니다. */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
+    "Helvetica Neue", Arial, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic",
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}

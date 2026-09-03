@@ -1,0 +1,23 @@
+{
+  "name": "global-macro-command-center",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "국가 경제 리스크 모니터 - World Bank 오픈 데이터 기반의 가벼운 거시경제 대시보드 (학교 프로젝트 MVP)",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "recharts": "^2.15.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "tailwindcss": "^4.0.0",
+    "vite": "^6.0.7"
+  }
+}

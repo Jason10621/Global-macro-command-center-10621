@@ -188,3 +188,48 @@
 - 데이터셋/시리즈 코드 구조(특히 DBnomics·OECD)는 문서와 실제 호출로 확인해 코드 주석에 정리했다.
 - 리스크·국면 판정 임계값은 국제기구의 경험적 기준(EU 60%/-3%, IMF 3개월 등)을 참고해
   내가 최종 결정했고, "공식 기준 아님"을 코드와 화면에 명시했다.
+
+---
+
+## 2일차 — GitHub Pages 배포 시 IMF 전망 카드 활성화
+
+### 1. 오늘의 목표
+- GitHub Pages(https://jason10621.github.io/Global-macro-command-center-10621/) 로
+  배포한 버전에서 "IMF 전망은 배포 환경(Vercel)에서만 표시됩니다"로 비어 있던
+  경제 전망(IMF) 카드를 정상 표시되게 만들기
+
+### 2. 가장 큰 문제/고민
+- IMF DataMapper API는 브라우저 직접 호출 시 CORS로 막혀 있어, 지금까지는
+  `api/imf.js`(Vercel Serverless Function)로 우회해 왔다.
+- 그런데 GitHub Pages는 정적 파일만 서빙하고 서버 함수를 실행할 수 없어서,
+  `/api/imf` 자체가 존재하지 않는다. Vercel 전용 프록시로는 GitHub Pages를 지원할 수 없었다.
+
+### 3. 어떻게 해결했는가
+- (1) IMF DataMapper를 Node로 직접 호출해보니 CORS는 "브라우저"에서만 막히고,
+  빌드를 실행하는 Node 환경에서는 문제없이 호출된다는 걸 확인했다.
+- (2) 또한 URL에 국가 코드를 넣어도 API가 이를 무시하고 항상 "그 지표의 전체 국가"
+  데이터를 돌려준다는 특징을 발견해서, 국가마다 따로 부를 필요 없이 지표 1개당
+  요청 1번(총 5번)이면 앱이 쓰는 17개국을 전부 커버할 수 있었다.
+- (3) 이 두 사실을 조합해 `scripts/fetch-imf-outlook.mjs`를 만들었다: 빌드 시점에
+  Node에서 IMF 5개 지표를 미리 받아 `public/data/imf-outlook.json`(17개국만 추려
+  약 110KB)으로 저장하고, `npm run build`가 `vite build` 전에 이 스크립트를 먼저 실행하게 했다.
+- (4) `src/api/imf.js`의 `fetchImfOutlook()`을 "먼저 `/api/imf` 프록시를 시도 →
+  전부 실패하면(=서버 함수가 없는 정적 호스팅) 정적 스냅샷으로 폴백"하도록 고쳐서,
+  Vercel과 GitHub Pages 양쪽 다 같은 코드로 동작하게 만들었다. 스냅샷 요청은
+  `import.meta.env.BASE_URL`을 붙여, GitHub Pages의 하위 경로(`/저장소이름/`)
+  배포에서도 경로가 깨지지 않게 했다.
+- (5) `npm run build`를 실제로 돌려 `dist/data/imf-outlook.json`이 생성되는지,
+  `npm run preview`(서버 함수가 없는 환경)로 GitHub Pages 상황을 그대로 재현해
+  `/api/imf`가 없어도 IMF 전망 카드가 정상 표시되는지 브라우저로 직접 확인했다.
+- (6) IMF WEO 전망은 1년에 몇 번만 갱신되므로, GitHub Actions 워크플로에 매달 1일
+  스케줄 트리거를 추가해 코드 변경이 없어도 스냅샷이 주기적으로 최신화되게 했다.
+
+### 4. 다음 목표
+- FRED(Phase 11)도 같은 방식(빌드 시 정적 스냅샷)으로 GitHub Pages를 지원할지,
+  아니면 선택 기능으로 남겨 둘지 결정하기
+
+### AI 활용 기록
+- IMF DataMapper API가 국가 코드 경로 세그먼트를 무시하고 전체 국가를 반환한다는
+  동작은 실제 curl/fetch 테스트로 직접 확인해 스크립트 설계에 반영했다.
+- 정적 스냅샷 폴백이 실제로 동작하는지, `npm run build` → `npm run preview` →
+  브라우저 스크린샷으로 IMF 전망 카드가 표시되는 것까지 직접 검증했다.

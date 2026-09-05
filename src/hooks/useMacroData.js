@@ -33,7 +33,8 @@ export function useLeadingIndicators(countryCode) {
   return useAsync(() => fetchLeadingIndicators(iso3), [countryCode], null);
 }
 
-// IMF 경제 전망(과거 + 향후 몇 년). 배포 환경에서만 동작 → 실패해도 부가 정보 취급.
+// IMF 경제 전망(과거 + 향후 몇 년). 프록시/정적 스냅샷 둘 다 실패할 수 있으니
+// "있으면 좋은 부가 정보"로 취급해 실패해도 화면 나머지는 그대로 둡니다.
 export function useImfOutlook(countryCode) {
   const iso3 = ISO3[countryCode];
   return useAsync(() => fetchImfOutlook(iso3), [countryCode], {}, true);

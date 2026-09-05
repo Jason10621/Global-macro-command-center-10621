@@ -6,7 +6,8 @@
   "description": "국가 경제 리스크 모니터 - World Bank 오픈 데이터 기반의 가벼운 거시경제 대시보드 (학교 프로젝트 MVP)",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "prefetch:imf": "node scripts/fetch-imf-outlook.mjs",
+    "build": "node scripts/fetch-imf-outlook.mjs && vite build",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -1,11 +1,17 @@
 # GitHub Pages 자동 배포
 # main 브랜치에 push 될 때마다 Vite 로 빌드해서 Pages 에 올립니다.
 # 저장소 Settings → Pages → Source 를 "GitHub Actions" 로 한 번만 바꿔주면 됩니다.
+#
+# 매달 1일에도 한 번씩 자동으로 다시 빌드합니다. 코드 변경이 없어도
+# IMF 전망 정적 스냅샷(scripts/fetch-imf-outlook.mjs, build 스크립트에서 실행)을
+# 최신 값으로 갱신해 배포하기 위해서입니다.
 name: Deploy to GitHub Pages
 
 on:
   push:
     branches: [main]
+  schedule:
+    - cron: "0 0 1 * *"
   workflow_dispatch:
 
 permissions:

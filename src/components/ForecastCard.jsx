@@ -31,7 +31,7 @@ export function ForecastCard({ outlook, error }) {
       {rows.length === 0 ? (
         <p className="mt-3 text-sm text-neutral-400">
           {error
-            ? "IMF 전망은 배포 환경(Vercel)에서만 표시됩니다."
+            ? "IMF 전망 데이터를 불러오지 못했습니다. 잠시 후 다시 시도해주세요."
             : "이 국가의 IMF 전망 데이터가 없습니다."}
         </p>
       ) : (

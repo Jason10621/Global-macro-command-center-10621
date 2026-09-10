@@ -102,6 +102,24 @@ export function Toggle({ checked, onChange, label }) {
   );
 }
 
+// 관심 등록용 별표 버튼. (채워짐 = 관심 국가)
+export function StarButton({ active, onClick, title }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={title}
+      aria-pressed={active}
+      className={`flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-2xl border shadow-sm transition
+        ${active ? "border-amber-300 bg-amber-50 text-amber-500" : "border-neutral-200 bg-white text-neutral-300 hover:text-neutral-400"}`}
+    >
+      <svg viewBox="0 0 20 20" className="h-5 w-5" fill={active ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.6">
+        <path d="M10 1.8l2.5 5.1 5.6.8-4 3.9 1 5.6L10 14.6 4.9 17.2l1-5.6-4-3.9 5.6-.8z" strokeLinejoin="round" />
+      </svg>
+    </button>
+  );
+}
+
 // 데이터를 불러오는 중에 보여주는 회전 스피너.
 export function Spinner({ label = "불러오는 중…" }) {
   return (

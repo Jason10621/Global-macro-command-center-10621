@@ -79,6 +79,29 @@ export function SegmentedControl({ value, onChange, options }) {
   );
 }
 
+// 작은 체크박스형 토글. (예: "주요 사건 표시")
+export function Toggle({ checked, onChange, label }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!checked)}
+      className="inline-flex items-center gap-2 text-xs font-medium text-neutral-500 hover:text-neutral-800"
+    >
+      <span
+        className={`flex h-4 w-4 items-center justify-center rounded-[5px] border transition
+          ${checked ? "border-blue-500 bg-blue-500 text-white" : "border-neutral-300 bg-white"}`}
+      >
+        {checked && (
+          <svg viewBox="0 0 12 12" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M2.5 6.5l2.5 2.5 4.5-5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        )}
+      </span>
+      {label}
+    </button>
+  );
+}
+
 // 데이터를 불러오는 중에 보여주는 회전 스피너.
 export function Spinner({ label = "불러오는 중…" }) {
   return (

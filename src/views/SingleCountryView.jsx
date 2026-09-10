@@ -12,7 +12,8 @@ import {
   useImfOutlook,
 } from "../hooks/useMacroData.js";
 import { computeRiskScore } from "../lib/riskScore.js";
-import { Select, Spinner, ErrorBox } from "../components/ui.jsx";
+import { eventsForRange } from "../lib/events.js";
+import { Select, Spinner, ErrorBox, Toggle } from "../components/ui.jsx";
 import { IndicatorTabs } from "../components/IndicatorTabs.jsx";
 import { StatCard } from "../components/StatCard.jsx";
 import { RiskCard } from "../components/RiskCard.jsx";
@@ -37,6 +38,7 @@ export function SingleCountryView() {
   const [countryCode, setCountryCode] = useState("KR");
   const [categoryKey, setCategoryKey] = useState("core");
   const [indicatorKey, setIndicatorKey] = useState("inflation");
+  const [showEvents, setShowEvents] = useState(true);
 
   const country = getCountry(countryCode);
   const indicator = getIndicator(indicatorKey);
@@ -134,6 +136,10 @@ export function SingleCountryView() {
                 )}
               </div>
 
+              <div className="flex justify-end px-1">
+                <Toggle checked={showEvents} onChange={setShowEvents} label="주요 사건 표시" />
+              </div>
+
               <TrendChart
                 title={`${indicator.label} 추이 (${series[0].year}–${latest.year})`}
                 data={series}
@@ -141,6 +147,11 @@ export function SingleCountryView() {
                 lines={[{ dataKey: "value", name: indicator.label, color: "#0071e3" }]}
                 refLine={
                   ["fiscalBalance", "currentAccount"].includes(indicator.key) ? 0 : undefined
+                }
+                events={
+                  showEvents
+                    ? eventsForRange(series[0].year, latest.year, countryCode)
+                    : undefined
                 }
               />
             </>

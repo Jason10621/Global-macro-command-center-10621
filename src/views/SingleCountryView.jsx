@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   COUNTRIES,
   CATEGORIES,
@@ -11,10 +11,12 @@ import {
   useCountryProfile,
   useImfOutlook,
 } from "../hooks/useMacroData.js";
+import { computeRiskScore } from "../lib/riskScore.js";
 import { Select, Spinner, ErrorBox } from "../components/ui.jsx";
 import { IndicatorTabs } from "../components/IndicatorTabs.jsx";
 import { StatCard } from "../components/StatCard.jsx";
 import { RiskCard } from "../components/RiskCard.jsx";
+import { RiskScoreCard } from "../components/RiskScoreCard.jsx";
 import { TrendChart } from "../components/TrendChart.jsx";
 import { OverviewGrid } from "../components/OverviewGrid.jsx";
 import { CountryHeaderCard } from "../components/CountryHeaderCard.jsx";
@@ -43,6 +45,12 @@ export function SingleCountryView() {
   const profile = useCountryProfile(countryCode);
   const imf = useImfOutlook(countryCode);
 
+  // 종합 리스크 스코어: 지표 응답이 성공했을 때만 계산 (dataById가 바뀔 때만 재계산)
+  const riskScore = useMemo(
+    () => (status === "success" ? computeRiskScore(dataById) : null),
+    [status, dataById]
+  );
+
   // 카테고리를 바꾸면, 선택 지표를 그 카테고리의 첫 지표로 맞춥니다.
   function selectCategory(key) {
     setCategoryKey(key);
@@ -66,7 +74,11 @@ export function SingleCountryView() {
       </div>
 
       {/* ── 국가 개요 ── */}
-      <CountryHeaderCard name={country.name} profile={profile.data} />
+      <CountryHeaderCard
+        name={country.name}
+        profile={profile.data}
+        scoreBadge={riskScore ? { score: riskScore.score, grade: riskScore.grade, tone: riskScore.tone } : null}
+      />
 
       {/* ── 카테고리 탭 ── */}
       <div>
@@ -87,6 +99,9 @@ export function SingleCountryView() {
 
       {status === "success" && (
         <>
+          {/* 종합 리스크 스코어 요약 */}
+          <RiskScoreCard score={riskScore} />
+
           {/* 카테고리 지표 한눈에 보기 */}
           <OverviewGrid
             categoryKey={categoryKey}

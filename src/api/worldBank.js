@@ -119,6 +119,10 @@ export async function fetchCountryProfile(countryCode) {
 /**
  * 같은 국가에 대해 서로 다른 두 지표를 가져와 "연도"를 기준으로 합칩니다.
  * 산점도(Scatter)에서 x축·y축에 다른 지표를 놓을 때 사용합니다.
+ *
+ * @param {number} lag  시차(년). 0이면 같은 해끼리 짝지음.
+ *   양수면 "y를 lag년 뒤(미래)의 값"과 짝지어, x가 y를 선행하는지(예: 신용팽창 →
+ *   몇 년 뒤 성장 둔화)를 봅니다. 음수면 반대로 y의 과거값과 짝짓습니다.
  * @returns {Promise<Array<{year:number, x:number, y:number}>>} 두 지표가 모두 있는 해만
  */
 export async function fetchIndicatorPair(
@@ -126,17 +130,19 @@ export async function fetchIndicatorPair(
   indicatorXId,
   indicatorYId,
   startYear = 2000,
-  endYear = 2025
+  endYear = 2025,
+  lag = 0
 ) {
   // Promise.all: 두 요청을 "동시에" 보내고 둘 다 끝날 때까지 기다립니다.
+  // 시차를 두면 짝지을 y 연도가 조회 구간을 벗어날 수 있어 넉넉히 받아옵니다.
   const [xSeries, ySeries] = await Promise.all([
     fetchIndicatorSeries(countryCode, indicatorXId, startYear, endYear),
-    fetchIndicatorSeries(countryCode, indicatorYId, startYear, endYear),
+    fetchIndicatorSeries(countryCode, indicatorYId, startYear - Math.abs(lag), endYear + Math.abs(lag)),
   ]);
 
   const yByYear = new Map(ySeries.map((d) => [d.year, d.value]));
 
   return xSeries
-    .filter((d) => yByYear.has(d.year)) // 두 지표가 같은 해에 모두 있어야 점을 찍음
-    .map((d) => ({ year: d.year, x: d.value, y: yByYear.get(d.year) }));
+    .filter((d) => yByYear.has(d.year + lag)) // x(t) 와 y(t+lag) 가 모두 있어야 점을 찍음
+    .map((d) => ({ year: d.year, x: d.value, y: yByYear.get(d.year + lag) }));
 }

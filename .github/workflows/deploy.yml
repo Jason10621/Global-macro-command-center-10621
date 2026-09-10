@@ -38,9 +38,13 @@ jobs:
       - run: npm ci
 
       # base 를 저장소 이름으로 자동 설정 → 저장소 이름을 뭐로 하든 그대로 동작
+      # FRED_API_KEY 는 선택: 저장소 Settings → Secrets 에 등록하면 빌드 때
+      # scripts/fetch-fred-data.mjs 가 미국 지표 스냅샷(public/data/fred.json)을 만듭니다.
+      # 없으면 그 단계만 조용히 건너뜁니다. (IMF 스냅샷은 키가 필요 없음)
       - run: npm run build
         env:
           VITE_BASE: /${{ github.event.repository.name }}/
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
 
       - uses: actions/upload-pages-artifact@v3
         with:

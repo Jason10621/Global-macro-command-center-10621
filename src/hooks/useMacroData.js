@@ -9,14 +9,16 @@ import {
 } from "../api/worldBank.js";
 import { fetchLeadingIndicators } from "../api/dbnomics.js";
 import { fetchImfOutlook } from "../api/imf.js";
+import { fetchFredBundle } from "../api/fred.js";
 import { INDICATORS, ISO3 } from "../lib/indicators.js";
 
 // 모든 World Bank 지표를 한 국가에 대해 한 번에 불러옵니다. (개요 그리드용)
 // data 형태: { "FP.CPI.TOTL.ZG": [{year,value}...], ... }
+// countryCode 가 비어 있으면(국가 비교 화면의 "3번째 국가 없음") 즉시 빈 결과를 돌려줍니다.
 export function useAllIndicators(countryCode) {
   const ids = INDICATORS.map((i) => i.id);
   return useAsync(
-    () => fetchManyIndicators(countryCode, ids),
+    () => (countryCode ? fetchManyIndicators(countryCode, ids) : Promise.resolve({})),
     [countryCode],
     {}
   );
@@ -38,4 +40,15 @@ export function useLeadingIndicators(countryCode) {
 export function useImfOutlook(countryCode) {
   const iso3 = ISO3[countryCode];
   return useAsync(() => fetchImfOutlook(iso3), [countryCode], {}, true);
+}
+
+// 미국 고빈도 지표(FRED). enabled=false면 요청하지 않습니다. (미국 화면에서만 켬)
+// 키/스냅샷이 없으면 data가 null → 화면에서 패널을 숨깁니다.
+export function useFredBundle(enabled) {
+  return useAsync(
+    () => (enabled ? fetchFredBundle() : Promise.resolve(null)),
+    [enabled],
+    null,
+    true
+  );
 }

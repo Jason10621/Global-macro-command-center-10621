@@ -1,7 +1,12 @@
 node_modules
 dist
 dist-ssr
+dev-dist
 *.local
+
+# FRED 정적 스냅샷은 개인 API 키로 만들어지므로 커밋하지 않습니다.
+# (빌드 때 재생성됨. IMF 스냅샷은 키가 필요 없어 커밋 대상입니다.)
+public/data/fred.json
 .DS_Store
 .vercel
 .env

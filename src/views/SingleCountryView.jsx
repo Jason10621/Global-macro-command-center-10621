@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   COUNTRIES,
   CATEGORIES,
@@ -10,15 +10,23 @@ import {
   useAllIndicators,
   useCountryProfile,
   useImfOutlook,
+  useFredBundle,
 } from "../hooks/useMacroData.js";
-import { Select, Spinner, ErrorBox } from "../components/ui.jsx";
+import { useWatchlist } from "../hooks/useWatchlist.js";
+import { computeRiskScore } from "../lib/riskScore.js";
+import { readScore, writeScore } from "../lib/scoreMemory.js";
+import { eventsForRange } from "../lib/events.js";
+import { Select, Spinner, ErrorBox, Toggle, StarButton } from "../components/ui.jsx";
 import { IndicatorTabs } from "../components/IndicatorTabs.jsx";
 import { StatCard } from "../components/StatCard.jsx";
 import { RiskCard } from "../components/RiskCard.jsx";
+import { RiskScoreCard } from "../components/RiskScoreCard.jsx";
 import { TrendChart } from "../components/TrendChart.jsx";
 import { OverviewGrid } from "../components/OverviewGrid.jsx";
 import { CountryHeaderCard } from "../components/CountryHeaderCard.jsx";
+import { WatchlistStrip } from "../components/WatchlistStrip.jsx";
 import { ForecastCard } from "../components/ForecastCard.jsx";
+import { FredPanel } from "../components/FredPanel.jsx";
 
 // ─────────────────────────────────────────────────────────────
 // [단일 국가] 화면.
@@ -35,13 +43,35 @@ export function SingleCountryView() {
   const [countryCode, setCountryCode] = useState("KR");
   const [categoryKey, setCategoryKey] = useState("core");
   const [indicatorKey, setIndicatorKey] = useState("inflation");
+  const [showEvents, setShowEvents] = useState(true);
+  const [scoreDelta, setScoreDelta] = useState(null);
 
   const country = getCountry(countryCode);
   const indicator = getIndicator(indicatorKey);
+  const watch = useWatchlist();
 
   const { status, data: dataById, error } = useAllIndicators(countryCode);
   const profile = useCountryProfile(countryCode);
   const imf = useImfOutlook(countryCode);
+  const fred = useFredBundle(countryCode === "US"); // 미국일 때만 요청
+
+  // 종합 리스크 스코어: 지표 응답이 성공했을 때만 계산 (dataById가 바뀔 때만 재계산)
+  const riskScore = useMemo(
+    () => (status === "success" ? computeRiskScore(dataById) : null),
+    [status, dataById]
+  );
+
+  // 점수가 나오면 "지난 방문 대비 변화"를 계산하고, 이번 점수를 저장해 둡니다.
+  // (delta 배지는 관심 국가에서만 노출 — 아래 scoreBadge 참고)
+  useEffect(() => {
+    if (!riskScore) {
+      setScoreDelta(null);
+      return;
+    }
+    const prev = readScore(countryCode);
+    setScoreDelta(prev == null ? null : riskScore.score - prev);
+    writeScore(countryCode, riskScore.score);
+  }, [countryCode, riskScore?.score]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 카테고리를 바꾸면, 선택 지표를 그 카테고리의 첫 지표로 맞춥니다.
   function selectCategory(key) {
@@ -55,18 +85,41 @@ export function SingleCountryView() {
 
   return (
     <div className="space-y-6">
-      {/* ── 국가 선택 ── */}
-      <div className="w-full sm:max-w-xs">
-        <Select
-          label="국가"
-          value={countryCode}
-          onChange={setCountryCode}
-          options={COUNTRIES.map((c) => ({ value: c.code, label: c.name }))}
+      {/* ── 관심 국가 빠른 이동 ── */}
+      <WatchlistStrip codes={watch.codes} currentCode={countryCode} onSelect={setCountryCode} />
+
+      {/* ── 국가 선택 (+ 관심 등록 별표) ── */}
+      <div className="flex items-end gap-2">
+        <div className="w-full sm:max-w-xs">
+          <Select
+            label="국가"
+            value={countryCode}
+            onChange={setCountryCode}
+            options={COUNTRIES.map((c) => ({ value: c.code, label: c.name }))}
+          />
+        </div>
+        <StarButton
+          active={watch.has(countryCode)}
+          onClick={() => watch.toggle(countryCode)}
+          title={watch.has(countryCode) ? "관심 국가에서 제거" : "관심 국가로 등록"}
         />
       </div>
 
       {/* ── 국가 개요 ── */}
-      <CountryHeaderCard name={country.name} profile={profile.data} />
+      <CountryHeaderCard
+        name={country.name}
+        profile={profile.data}
+        scoreBadge={
+          riskScore
+            ? {
+                score: riskScore.score,
+                grade: riskScore.grade,
+                tone: riskScore.tone,
+                delta: watch.has(countryCode) ? scoreDelta : null,
+              }
+            : null
+        }
+      />
 
       {/* ── 카테고리 탭 ── */}
       <div>
@@ -87,6 +140,9 @@ export function SingleCountryView() {
 
       {status === "success" && (
         <>
+          {/* 종합 리스크 스코어 요약 */}
+          <RiskScoreCard score={riskScore} />
+
           {/* 카테고리 지표 한눈에 보기 */}
           <OverviewGrid
             categoryKey={categoryKey}
@@ -119,6 +175,10 @@ export function SingleCountryView() {
                 )}
               </div>
 
+              <div className="flex justify-end px-1">
+                <Toggle checked={showEvents} onChange={setShowEvents} label="주요 사건 표시" />
+              </div>
+
               <TrendChart
                 title={`${indicator.label} 추이 (${series[0].year}–${latest.year})`}
                 data={series}
@@ -126,6 +186,11 @@ export function SingleCountryView() {
                 lines={[{ dataKey: "value", name: indicator.label, color: "#0071e3" }]}
                 refLine={
                   ["fiscalBalance", "currentAccount"].includes(indicator.key) ? 0 : undefined
+                }
+                events={
+                  showEvents
+                    ? eventsForRange(series[0].year, latest.year, countryCode)
+                    : undefined
                 }
               />
             </>
@@ -138,6 +203,11 @@ export function SingleCountryView() {
             outlook={imf.status === "success" ? imf.data : {}}
             error={imf.status === "error"}
           />
+
+          {/* 미국 고빈도 지표 (FRED) — 데이터가 있을 때만 */}
+          {countryCode === "US" && fred.status === "success" && fred.data && (
+            <FredPanel bundle={fred.data} />
+          )}
         </>
       )}
     </div>

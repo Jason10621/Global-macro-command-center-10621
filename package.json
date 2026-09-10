@@ -7,7 +7,9 @@
   "scripts": {
     "dev": "vite",
     "prefetch:imf": "node scripts/fetch-imf-outlook.mjs",
-    "build": "node scripts/fetch-imf-outlook.mjs && vite build",
+    "prefetch:fred": "node scripts/fetch-fred-data.mjs",
+    "gen:icons": "node scripts/gen-pwa-icons.mjs",
+    "build": "node scripts/fetch-imf-outlook.mjs && node scripts/fetch-fred-data.mjs && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -19,6 +21,7 @@
     "@tailwindcss/vite": "^4.0.0",
     "@vitejs/plugin-react": "^4.3.4",
     "tailwindcss": "^4.0.0",
-    "vite": "^6.0.7"
+    "vite": "^6.0.7",
+    "vite-plugin-pwa": "^1.3.0"
   }
 }

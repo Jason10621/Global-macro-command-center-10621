@@ -18,8 +18,13 @@ import { Card } from "./ui.jsx";
 //   xKey   : x축으로 쓸 필드명 (기본 "year", 월간 데이터면 "date")
 //   unit   : y축·툴팁 단위
 //   refLine: 숫자를 주면 그 높이에 점선 기준선을 그림 (예: CLI 100, 수지 0)
+//   events : [{ year, label, scope }] ← 연도 세로선으로 겹칠 주요 사건 (events.js)
+//            xKey === "year" 이고, 그 연도가 data에 있을 때만 그려집니다.
 // ─────────────────────────────────────────────────────────────
-export function TrendChart({ title, data, lines, unit = "%", xKey = "year", refLine }) {
+export function TrendChart({ title, data, lines, unit = "%", xKey = "year", refLine, events }) {
+  const years = xKey === "year" ? new Set(data.map((d) => d.year)) : null;
+  const shownEvents = years ? (events ?? []).filter((e) => years.has(e.year)) : [];
+
   return (
     <Card className="p-5">
       <p className="mb-4 px-1 text-sm font-medium text-neutral-600">{title}</p>
@@ -63,6 +68,22 @@ export function TrendChart({ title, data, lines, unit = "%", xKey = "year", refL
               />
             )}
 
+            {shownEvents.map((e) => (
+              <ReferenceLine
+                key={`${e.year}-${e.label}`}
+                x={e.year}
+                stroke={e.scope === "country" ? "#ff9500" : "#b0b0b0"}
+                strokeDasharray="3 3"
+                strokeWidth={1}
+                label={{
+                  value: String(e.year),
+                  position: "top",
+                  fontSize: 10,
+                  fill: e.scope === "country" ? "#ff9500" : "#9ca3af",
+                }}
+              />
+            ))}
+
             {lines.map((ln) => (
               <Line
                 key={ln.dataKey}
@@ -95,6 +116,20 @@ export function TrendChart({ title, data, lines, unit = "%", xKey = "year", refL
             </span>
           ))}
         </div>
+      )}
+
+      {shownEvents.length > 0 && (
+        <p className="mt-3 border-t border-neutral-100 pt-2 text-[11px] leading-relaxed text-neutral-400">
+          <span className="font-medium">주요 사건</span>{" "}
+          {shownEvents.map((e, i) => (
+            <span key={`${e.year}-${e.label}`}>
+              {i > 0 && " · "}
+              <span className={e.scope === "country" ? "text-amber-600" : ""}>
+                {e.year} {e.label}
+              </span>
+            </span>
+          ))}
+        </p>
       )}
     </Card>
   );

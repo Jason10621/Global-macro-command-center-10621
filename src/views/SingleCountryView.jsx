@@ -10,6 +10,7 @@ import {
   useAllIndicators,
   useCountryProfile,
   useImfOutlook,
+  useFredBundle,
 } from "../hooks/useMacroData.js";
 import { useWatchlist } from "../hooks/useWatchlist.js";
 import { computeRiskScore } from "../lib/riskScore.js";
@@ -25,6 +26,7 @@ import { OverviewGrid } from "../components/OverviewGrid.jsx";
 import { CountryHeaderCard } from "../components/CountryHeaderCard.jsx";
 import { WatchlistStrip } from "../components/WatchlistStrip.jsx";
 import { ForecastCard } from "../components/ForecastCard.jsx";
+import { FredPanel } from "../components/FredPanel.jsx";
 
 // ─────────────────────────────────────────────────────────────
 // [단일 국가] 화면.
@@ -51,6 +53,7 @@ export function SingleCountryView() {
   const { status, data: dataById, error } = useAllIndicators(countryCode);
   const profile = useCountryProfile(countryCode);
   const imf = useImfOutlook(countryCode);
+  const fred = useFredBundle(countryCode === "US"); // 미국일 때만 요청
 
   // 종합 리스크 스코어: 지표 응답이 성공했을 때만 계산 (dataById가 바뀔 때만 재계산)
   const riskScore = useMemo(
@@ -200,6 +203,11 @@ export function SingleCountryView() {
             outlook={imf.status === "success" ? imf.data : {}}
             error={imf.status === "error"}
           />
+
+          {/* 미국 고빈도 지표 (FRED) — 데이터가 있을 때만 */}
+          {countryCode === "US" && fred.status === "success" && fred.data && (
+            <FredPanel bundle={fred.data} />
+          )}
         </>
       )}
     </div>

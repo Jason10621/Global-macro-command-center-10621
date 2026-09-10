@@ -7,8 +7,9 @@
   "scripts": {
     "dev": "vite",
     "prefetch:imf": "node scripts/fetch-imf-outlook.mjs",
+    "prefetch:fred": "node scripts/fetch-fred-data.mjs",
     "gen:icons": "node scripts/gen-pwa-icons.mjs",
-    "build": "node scripts/fetch-imf-outlook.mjs && vite build",
+    "build": "node scripts/fetch-imf-outlook.mjs && node scripts/fetch-fred-data.mjs && vite build",
     "preview": "vite preview"
   },
   "dependencies": {

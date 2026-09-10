@@ -65,7 +65,6 @@ export function ScatterChartCard({
               tick={{ fontSize: 12, fill: "#9ca3af" }}
               tickLine={false}
               axisLine={{ stroke: "#e5e7eb" }}
-              domain={["dataMin", "dataMax"]}
               label={{
                 value: xLabel,
                 position: "insideBottom",

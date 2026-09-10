@@ -13,10 +13,11 @@ import { INDICATORS, ISO3 } from "../lib/indicators.js";
 
 // 모든 World Bank 지표를 한 국가에 대해 한 번에 불러옵니다. (개요 그리드용)
 // data 형태: { "FP.CPI.TOTL.ZG": [{year,value}...], ... }
+// countryCode 가 비어 있으면(국가 비교 화면의 "3번째 국가 없음") 즉시 빈 결과를 돌려줍니다.
 export function useAllIndicators(countryCode) {
   const ids = INDICATORS.map((i) => i.id);
   return useAsync(
-    () => fetchManyIndicators(countryCode, ids),
+    () => (countryCode ? fetchManyIndicators(countryCode, ids) : Promise.resolve({})),
     [countryCode],
     {}
   );

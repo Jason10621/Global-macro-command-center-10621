@@ -12,10 +12,20 @@
 //    그래서 "동일 가중 평균"이라는 가장 단순하고 설명 가능한 방식을 택했습니다.
 //    이 점수는 공식 국가신용등급이 아니라, 이 앱의 규칙을 요약한 학습용 지표입니다.
 // ─────────────────────────────────────────────────────────────
-import { INDICATORS } from "./indicators.js";
+import { INDICATORS, CATEGORIES } from "./indicators.js";
 import { assessRisk } from "./risk.js";
 
 const TONE_POINTS = { green: 90, amber: 55, red: 20 };
+
+// 지표 하나의 "최근값 → 점수(0~100)". 판정 불가면 null.
+function scoreOne(ind, dataById) {
+  if (!ind.riskType) return null;
+  const series = dataById?.[ind.id] ?? [];
+  const latest = series.length ? series[series.length - 1] : null;
+  if (!latest || latest.value == null) return null;
+  const risk = assessRisk(ind.riskType, latest.value);
+  return TONE_POINTS[risk.tone] ?? null;
+}
 
 // 점수 → 등급. 구간(75/55/40)은 제가 정한 단순 기준입니다.
 function gradeFor(score) {
@@ -71,3 +81,24 @@ export function computeRiskScore(dataById) {
   const { grade, tone } = gradeFor(score);
   return { score, grade, tone, counts, items, n: items.length };
 }
+
+/**
+ * 카테고리별 평균 점수(0~100). 레이더 차트("이 나라는 재정은 튼튼한데 대외는 약하다")용.
+ * @returns {Array<{key:string, label:string, score:number|null, n:number}>}  CATEGORIES 순서
+ */
+export function computeCategoryScores(dataById) {
+  return CATEGORIES.map((cat) => {
+    const pts = INDICATORS
+      .filter((i) => i.category === cat.key)
+      .map((i) => scoreOne(i, dataById))
+      .filter((p) => p != null);
+    return {
+      key: cat.key,
+      label: cat.label,
+      score: pts.length ? Math.round(pts.reduce((s, p) => s + p, 0) / pts.length) : null,
+      n: pts.length,
+    };
+  });
+}
+
+export { gradeFor };

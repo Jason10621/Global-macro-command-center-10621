@@ -13,7 +13,8 @@
 //  ▷ 남용 방지: 길이 제한 + 허용 모델 고정. (학교 프로젝트 수준의 최소 방어)
 // ─────────────────────────────────────────────────────────────
 
-const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+// 항상 최신을 가리키는 별칭 + 과부하/종료 시 가벼운 모델 폴백 (src/api/gemini.js 와 같은 이유)
+const MODELS = [process.env.GEMINI_MODEL || "gemini-flash-latest", "gemini-flash-lite-latest"];
 const MAX_SYSTEM = 12000; // 시스템 프롬프트(경제 데이터 요약) 최대 글자 수
 const MAX_TURNS = 12; // 대화 최대 턴 수
 const MAX_TEXT = 2000; // 한 메시지 최대 글자 수
@@ -34,19 +35,23 @@ export default async function handler(req, res) {
   }));
 
   try {
-    const upstream = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: String(system ?? "").slice(0, MAX_SYSTEM) }] },
-          contents: clean,
-          generationConfig: { temperature: 0.4, maxOutputTokens: 1024 },
-        }),
-      }
-    );
-    const data = await upstream.json();
+    let upstream, data;
+    for (const model of MODELS) {
+      upstream = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: String(system ?? "").slice(0, MAX_SYSTEM) }] },
+            contents: clean,
+            generationConfig: { temperature: 0.4, maxOutputTokens: 1024 },
+          }),
+        }
+      );
+      data = await upstream.json();
+      if (upstream.ok || ![404, 429, 503].includes(upstream.status)) break;
+    }
     if (!upstream.ok) {
       return res.status(502).json({ error: data?.error?.message ?? `Gemini 오류 (HTTP ${upstream.status})` });
     }

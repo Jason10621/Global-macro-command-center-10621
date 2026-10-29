@@ -11,7 +11,10 @@
 //    정적 파일에 넣은 키는 개발자도구로 누구나 볼 수 있어 곧바로 도용됩니다.
 // ─────────────────────────────────────────────────────────────
 
-const MODEL = "gemini-2.5-flash";
+// gemini-2.5-flash 는 신규 사용자에게 종료되어 404가 났습니다. 버전 번호가 들어간 이름은
+// 이렇게 사라질 수 있어, 항상 최신을 가리키는 별칭을 쓰고 과부하(503)·종료(404)·한도(429)면
+// 가벼운 모델로 한 번 더 시도합니다.
+const MODELS = ["gemini-flash-latest", "gemini-flash-lite-latest"];
 const KEY_STORAGE = "gmcc:geminiKey:v1";
 
 export const NEED_KEY = "NEED_KEY";
@@ -72,9 +75,9 @@ export async function askGemini(system, history) {
   const key = readUserKey();
   if (!key) throw new Error(NEED_KEY);
 
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,
-    {
+  let res, data;
+  for (const model of MODELS) {
+    res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": key },
       body: JSON.stringify({
@@ -82,12 +85,16 @@ export async function askGemini(system, history) {
         contents,
         generationConfig: { temperature: 0.4, maxOutputTokens: 1024 },
       }),
-    }
-  );
-  const data = await res.json().catch(() => ({}));
+    });
+    data = await res.json().catch(() => ({}));
+    if (res.ok || ![404, 429, 503].includes(res.status)) break; // 다음 모델로 넘어갈 상황만 재시도
+  }
   if (!res.ok) {
     if (res.status === 400 || res.status === 403) {
       throw new Error(data?.error?.message || "API 키가 올바르지 않습니다. 키를 다시 확인해주세요.");
+    }
+    if (res.status === 503 || res.status === 429) {
+      throw new Error("지금 AI 서버가 붐비거나 무료 한도에 도달했어요. 잠시 후 다시 시도해주세요.");
     }
     throw new Error(data?.error?.message || `Gemini 오류 (HTTP ${res.status})`);
   }

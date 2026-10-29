@@ -7,15 +7,38 @@
 //    3) 대상 지표들의 평균을 내 100점 만점 점수로.
 //    4) 점수 구간을 A~D 등급 + 색 톤으로 라벨링.
 //
-//  ▷ 왜 "평균"인가 (한계도 함께)
-//    지표마다 중요도가 다르지만, 가중치를 제가 임의로 정하면 근거가 약해집니다.
-//    그래서 "동일 가중 평균"이라는 가장 단순하고 설명 가능한 방식을 택했습니다.
+//  ▷ 가중치 (v2) — "동일 가중"에서 "3단계 가중"으로
+//    v1은 모든 지표를 똑같이 취급했는데, 그러면 "대출금리·시가총액처럼 나라의 사정(물가 수준,
+//    시장 규모)에 따라 자연히 높거나 낮은 지표"가 "실업·부채·외환보유액처럼 위기와 직결되는
+//    지표"와 같은 무게를 갖게 됩니다. 그래서 WEIGHTS 에 3단계(1.5 / 1.0 / 0.6)를 두었습니다.
+//      1.5 핵심 : 성장·물가·실업·정부부채·재정수지·경상수지·외환보유액 (위기 선행/직결 지표)
+//      1.0 일반 : 청년실업·민간신용
+//      0.6 참고 : 시가총액·대출금리·M2 증가율 (국가 구조·물가 수준에 따라 달라 해석 여지 큼)
+//    ※ 이 숫자는 아직 사용자 피드백으로 검증한 값이 아니라 "제 가설"입니다.
+//      WEIGHTS 한 곳만 고치면 점수·카드·AI 설명이 모두 따라 바뀌게 만들었습니다.
 //    이 점수는 공식 국가신용등급이 아니라, 이 앱의 규칙을 요약한 학습용 지표입니다.
 // ─────────────────────────────────────────────────────────────
 import { INDICATORS, CATEGORIES } from "./indicators.js";
 import { assessRisk } from "./risk.js";
 
 const TONE_POINTS = { green: 90, amber: 55, red: 20 };
+
+// riskType별 가중치. 목록에 없으면 1.0. (위 설명 참고)
+export const WEIGHTS = {
+  gdpGrowth: 1.5,
+  inflation: 1.5,
+  unemployment: 1.5,
+  govDebt: 1.5,
+  fiscalBalance: 1.5,
+  currentAccount: 1.5,
+  reservesMonths: 1.5,
+  youthUnemployment: 1.0,
+  privateCredit: 1.0,
+  marketCap: 0.6,
+  lendingRate: 0.6,
+  broadMoney: 0.6,
+};
+const weightOf = (riskType) => WEIGHTS[riskType] ?? 1;
 
 // 지표 하나의 "최근값 → 점수(0~100)". 판정 불가면 null.
 function scoreOne(ind, dataById) {
@@ -68,15 +91,18 @@ export function computeRiskScore(dataById) {
       value: latest.value,
       year: latest.year,
       points,
+      weight: weightOf(ind.riskType),
     });
   }
 
   if (items.length === 0) return null;
 
-  const score = Math.round(items.reduce((s, x) => s + x.points, 0) / items.length);
+  const totalW = items.reduce((s, x) => s + x.weight, 0);
+  const score = Math.round(items.reduce((s, x) => s + x.points * x.weight, 0) / totalW);
   const counts = { green: 0, amber: 0, red: 0 };
   items.forEach((x) => (counts[x.tone] += 1));
-  items.sort((a, b) => a.points - b.points); // 취약한 지표가 앞에 오도록
+  // 취약한 지표가 앞에: 점수가 낮은 순, 같으면 가중치가 큰(=중요한) 지표 먼저
+  items.sort((a, b) => a.points - b.points || b.weight - a.weight);
 
   const { grade, tone } = gradeFor(score);
   return { score, grade, tone, counts, items, n: items.length };

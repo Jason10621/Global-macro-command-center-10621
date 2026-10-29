@@ -13,6 +13,7 @@ import {
   useFredBundle,
 } from "../hooks/useMacroData.js";
 import { useWatchlist } from "../hooks/useWatchlist.js";
+import { useAiContext } from "../hooks/useAiContext.jsx";
 import { computeRiskScore } from "../lib/riskScore.js";
 import { readScore, writeScore } from "../lib/scoreMemory.js";
 import { eventsForRange } from "../lib/events.js";
@@ -72,6 +73,18 @@ export function SingleCountryView() {
     setScoreDelta(prev == null ? null : riskScore.score - prev);
     writeScore(countryCode, riskScore.score);
   }, [countryCode, riskScore?.score]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // AI 도우미가 "지금 화면의 데이터"를 근거로 답하도록 현재 국가 데이터를 공유합니다.
+  const { setPage } = useAiContext();
+  const imfData = imf.status === "success" ? imf.data : null;
+  useEffect(() => {
+    if (status !== "success") {
+      setPage(null);
+      return;
+    }
+    setPage({ countryName: country.name, dataById, riskScore, imfOutlook: imfData });
+    return () => setPage(null);
+  }, [status, countryCode, dataById, riskScore, imfData]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 카테고리를 바꾸면, 선택 지표를 그 카테고리의 첫 지표로 맞춥니다.
   function selectCategory(key) {

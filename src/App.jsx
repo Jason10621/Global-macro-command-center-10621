@@ -4,6 +4,8 @@ import { SingleCountryView } from "./views/SingleCountryView.jsx";
 import { BusinessCycleView } from "./views/BusinessCycleView.jsx";
 import { CompareView } from "./views/CompareView.jsx";
 import { RelationView } from "./views/RelationView.jsx";
+import { AiAssistant } from "./components/AiAssistant.jsx";
+import { AiContextProvider } from "./hooks/useAiContext.jsx";
 
 // 상단 세그먼트 컨트롤에 들어갈 모드들
 const MODES = [
@@ -22,6 +24,7 @@ export default function App() {
   const [mode, setMode] = useState("single");
 
   return (
+    <AiContextProvider>
     <div className="min-h-screen bg-neutral-50 text-neutral-900">
       <div className="mx-auto max-w-3xl px-5 py-14 sm:py-20">
         {/* ── 헤더 ── */}
@@ -62,6 +65,8 @@ export default function App() {
           (전망). 리스크 신호·경기 국면은 학습용으로 만든 단순 규칙이며, 투자 판단의 근거가 아닙니다.
         </footer>
       </div>
+      <AiAssistant />
     </div>
+    </AiContextProvider>
   );
 }

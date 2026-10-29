@@ -33,7 +33,7 @@ export function RiskScoreCard({ score }) {
             </span>
           </div>
           <p className="mt-1.5 text-xs text-neutral-400">
-            리스크 규칙이 있는 지표 {score.n}개의 동일 가중 평균
+            리스크 규칙이 있는 지표 {score.n}개의 가중 평균 (핵심 지표 ×1.5)
           </p>
         </div>
 
@@ -58,6 +58,9 @@ export function RiskScoreCard({ score }) {
                     <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${t.dot}`} />
                     <span className="text-neutral-700">{i.label}</span>
                     <span className="text-xs text-neutral-400">· {catLabel(i.category)}</span>
+                    {i.weight > 1 && (
+                      <span className="rounded bg-neutral-100 px-1 text-[10px] text-neutral-500">핵심</span>
+                    )}
                     <span className={`ml-auto text-xs font-medium ${t.text}`}>{i.level}</span>
                   </li>
                 );

@@ -51,6 +51,7 @@ Node 18 이상 필요 (권장 20+).
 | [World Bank Open Data](https://data.worldbank.org) | 불필요 | 허용 | 브라우저 직접 | 거시·기업/시장·재정·대외·금융 지표 23종, 국가 메타데이터 |
 | [DBnomics](https://db.nomics.world) | 불필요 | 허용 | 브라우저 직접 | OECD 경기선행지수(CLI)·기업경기실사(BCI)·소비자심리(CCI) |
 | [IMF DataMapper](https://www.imf.org/external/datamapper) | 불필요 | **막힘** | `api/imf.js` 서버 함수 경유, 실패 시 빌드 시점 정적 스냅샷으로 폴백 | 성장률·물가·실업·정부부채·경상수지 전망(향후 3년) |
+| [Gemini API](https://aistudio.google.com/apikey) | 필요 | 허용 | Vercel: `api/chat.js`(서버 키). 정적 호스팅: 사용자가 입력한 본인 키로 직접 호출(브라우저에만 저장) | 경제 AI 도우미 — 현재 화면 데이터에 근거해 답변, 투자 조언 금지 |
 | [FRED](https://fred.stlouisfed.org) | 필요 | 막힘 | `api/fred.js` 서버 함수 경유, 실패 시 빌드 시점 정적 스냅샷으로 폴백 | (선택) 미국 고빈도 시계열(장단기 금리차·연방기금금리·실업률) — `FRED_API_KEY` 등록 시 활성 |
 
 - **왜 이렇게 나눴나?** 키가 필요 없고 CORS가 열린 소스(World Bank·DBnomics)를 주력으로 삼아
@@ -138,6 +139,16 @@ GitHub Pages는 서버 함수를 실행하지 못하므로 `/api/imf`, `/api/fre
 정상 표시됩니다. FRED(선택 기능)는 저장소 **Settings → Secrets and variables →
 Actions** 에 `FRED_API_KEY` 를 등록하면 빌드가 스냅샷을 만들어 활성화되고,
 없으면 미국 화면의 FRED 패널만 숨겨집니다.
+
+**FRED 활성화 순서** (키는 본인이 직접 발급·등록해야 합니다)
+1. <https://fredaccount.stlouisfed.org/apikeys> 에서 무료 키 발급
+2. 저장소 Settings → Secrets and variables → Actions → **New repository secret**
+   이름 `FRED_API_KEY`, 값에 키 붙여넣기
+3. Actions 탭 → *Deploy to GitHub Pages* → **Run workflow** (또는 main에 push) → 미국 화면에 패널 표시
+
+**경제 AI 도우미(Gemini)**: GitHub Pages에는 서버가 없어 개발자 키를 숨길 수 없습니다.
+그래서 채팅창에서 방문자가 본인 무료 키를 입력하면 그 브라우저에만 저장해 Gemini로 직접
+호출합니다. Vercel에 배포하면 `GEMINI_API_KEY` 환경변수만 넣어 키 입력 없이 쓸 수 있습니다.
 
 ### Vercel (서버 함수까지 실시간으로 쓰고 싶을 때)
 
